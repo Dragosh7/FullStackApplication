@@ -1,0 +1,79 @@
+version: '3'
+
+services:
+  db-user:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'user-db'
+      MYSQL_ROOT_PASSWORD: 'admin'
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-user:/var/lib/mysql
+    networks:
+      demo_net:
+
+  db-device:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'device-db'
+      MYSQL_ROOT_PASSWORD: 'admin'
+    ports:
+      - "3308:3306"
+    volumes:
+      - db-device:/var/lib/mysql
+    networks:
+      demo_net:
+
+  user-backend:
+    build:
+      context: ./user-backend  # Adjust path as necessary
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_IP=db-user
+      - DB_PORT=3306
+      - DB_DBNAME=user-db
+      - DB_USER=root
+      - DB_PASSWORD=admin
+    depends_on:
+      - db-user
+    networks:
+      demo_net:
+
+  device-backend:
+    build:
+      context: ./device-backend  # Adjust path as necessary
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_IP=db-device
+      - DB_PORT=3306
+      - DB_DBNAME=device-db  # Adjust as necessary
+      - DB_USER=root
+      - DB_PASSWORD=admin
+    depends_on:
+      - db-device
+    networks:
+      demo_net:
+
+  frontend:
+    build:
+      context: ./frontend  # Adjust path as necessary
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"  # Adjust if necessary for your frontend
+    command: ["npm", "start"]
+    networks:
+      demo_net:
+volumes:
+  db-user:
+  db-device:
+
+networks:
+  demo_net:
+    external: true
