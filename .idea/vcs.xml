@@ -2,8 +2,5 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/New folder/react-demo" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/New folder/spring-devices" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/New folder/spring-users" vcs="Git" />
   </component>
 </project>

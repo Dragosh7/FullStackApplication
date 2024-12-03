@@ -1,6 +1,39 @@
 version: '3'
 
 services:
+
+  reverse-proxy:
+    image: traefik:v3.2
+    container_name: traefik
+    command:
+      - --api.insecure=true
+      - --providers.docker
+      - --accesslog=true
+      - --accesslog.filepath=/var/log/traefik/access.log
+      - --log.level=DEBUG
+      - --entryPoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock #.ro
+      - traefik_logs:/var/log/traefik
+    networks:
+      demo_net:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"    # AMQP port for communication
+      - "15672:15672"  # RabbitMQ management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin
+    networks:
+      demo_net:
+
   db-user:
     image: mysql
     restart: always
@@ -27,12 +60,27 @@ services:
     networks:
       demo_net:
 
+  db-monitoring:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'monitoring-db'
+      MYSQL_ROOT_PASSWORD: 'admin'
+    ports:
+      - "3309:3306"
+    volumes:
+      - db-monitoring:/var/lib/mysql
+    networks:
+      demo_net:
+
   user-backend:
     build:
-      context: ./user-backend  # Adjust path as necessary
+      context: ./user-backend
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
+    #ports:
+    #  - "8080:8080"
+    deploy:
+      replicas: 2
     environment:
       - DB_IP=db-user
       - DB_PORT=3306
@@ -41,38 +89,75 @@ services:
       - DB_PASSWORD=admin
     depends_on:
       - db-user
+      - device-backend
+      - monitoring-backend
     networks:
       demo_net:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.user-backend.rule=Host(`user-backend.localhost`) && PathPrefix(`/user-backend`)"
+      - "traefik.http.services.user-backend.loadbalancer.server.port=8080"
+
 
   device-backend:
     build:
-      context: ./device-backend  # Adjust path as necessary
+      context: ./device-backend
       dockerfile: Dockerfile
-    ports:
-      - "8081:8081"
+    #ports:
+     # - "8081:8081"
+    deploy:
+      replicas: 2
     environment:
       - DB_IP=db-device
       - DB_PORT=3306
-      - DB_DBNAME=device-db  # Adjust as necessary
+      - DB_DBNAME=device-db
       - DB_USER=root
       - DB_PASSWORD=admin
     depends_on:
       - db-device
+      - rabbitmq
+      - monitoring-backend
+    networks:
+      demo_net:
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.device-backend.rule=Host(`device-backend.localhost`) || PathPrefix(`/device-backend`)"
+      - "traefik.http.services.device-backend.loadbalancer.server.port=8081"
+
+  monitoring-backend:
+    build:
+      context: ./monitoring-backend
+      dockerfile: Dockerfile
+    ports:
+      - "8089:8089"
+    environment:
+      - DB_IP=db-monitoring
+      - DB_PORT=3306
+      - DB_DBNAME=monitoring-db
+      - DB_USER=root
+      - DB_PASSWORD=admin
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+    depends_on:
+      - rabbitmq
+      - db-monitoring
     networks:
       demo_net:
 
   frontend:
     build:
-      context: ./frontend  # Adjust path as necessary
+      context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"  # Adjust if necessary for your frontend
+      - "3000:3000"
     command: ["npm", "start"]
     networks:
       demo_net:
 volumes:
   db-user:
   db-device:
+  db-monitoring:
+  traefik_logs:
 
 networks:
   demo_net:

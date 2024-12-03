@@ -27,13 +27,13 @@ public class Device implements Serializable {
     private String address;
 
     @Column(name = "energy", nullable = false)
-    private int energy;
+    private Double energy;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = true)
     @JoinColumn(name = "person_id")
     private Person person;
 
-    public Device(String name, String model, Person person, String address, Integer energy) {
+    public Device(String name, String model, Person person, String address, Double energy) {
         this.name = name;
         this.model = model;
         this.person = person;
@@ -41,7 +41,7 @@ public class Device implements Serializable {
         this.energy = energy;
     }
 
-    public Device(String name, String model, String address, Integer energy) {
+    public Device(String name, String model, String address, Double energy) {
         this.name = name;
         this.model = model;
         this.address = address;

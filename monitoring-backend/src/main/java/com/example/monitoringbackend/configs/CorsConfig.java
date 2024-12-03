@@ -1,4 +1,4 @@
-package userbackend;
+package com.example.monitoringbackend.configs;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,7 +9,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 
 @Configuration
-public class WebConfig {
+public class CorsConfig {
 
     @Bean
     public CorsFilter corsFilter() {

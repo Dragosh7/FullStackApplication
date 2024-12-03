@@ -2,6 +2,7 @@ import { HOST } from '../../commons/hosts';
 import RestApiClient from "../../commons/api/rest-client";
 
 const endpoint = {
+    consumption: '/consumption',
     device: '/device',
     person: '/person',
 };
@@ -74,7 +75,7 @@ export const updateDevice = (id, device, callback) => {
 };
 
 export const linkDevice = (id, personName, callback) => {
-    console.log("in api a venit:", JSON.stringify(personName));
+    //console.log("in api:", JSON.stringify(personName));
     let request = new Request(HOST.device_backend_api + endpoint.device + "/link" + `/${id}`, {
         method: 'POST',
         headers: {
@@ -103,10 +104,29 @@ export const unlinkDevice = (id, callback) => {
     RestApiClient.performRequest(request, callback);
 };
 
+export const getDeviceConsumption = (deviceId, date, callback) => {
+    // Construct the URL with query parameter for date
+    const url = new URL(HOST.monitoring_backend_api + endpoint.consumption + `/${deviceId}`);
+    url.searchParams.append("date", date); 
+
+    let request = new Request(url, {
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+        },
+        //body: JSON.stringify(date),
+    });
+
+    console.log("Request URL: " + request.url); 
+    RestApiClient.performRequest(request, callback);
+};
+
 export {
     getDevices,
     getDeviceById,
     addDevice,
     getPersons,getDevicesByPersonName,
     getUnlinkedDevices,
+    
 };

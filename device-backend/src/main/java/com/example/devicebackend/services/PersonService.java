@@ -56,9 +56,14 @@ public class PersonService {
 
     public UUID insert(PersonDetailsDTO personDTO) {
         Person person = PersonBuilder.toEntity(personDTO);
-        person = personRepository.save(person);
-        LOGGER.debug("Person with id {} was inserted in db", person.getId());
-        return person.getId();
+        Optional<Person> personOptional = personRepository.findByName(personDTO.getName());
+        if (personOptional.isEmpty()) {
+            person = personRepository.save(person);
+            LOGGER.debug("Person with id {} was inserted in db", person.getId());
+            return person.getId();
+        }
+        LOGGER.debug("Person already exists {} in db", person.getId());
+        return null;
     }
 
     public UUID updatePerson(UUID id, PersonDetailsDTO personDTO) throws Exception {

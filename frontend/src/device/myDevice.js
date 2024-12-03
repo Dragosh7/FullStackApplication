@@ -1,20 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getDevicesByPersonName, unlinkDevice, getUnlinkedDevices, linkDevice } from './api/device-api'; 
+import { getDevicesByPersonName, unlinkDevice, getUnlinkedDevices, linkDevice, getDeviceConsumption } from './api/device-api'; 
 import { DataGrid } from '@mui/x-data-grid';
-import { Box, Typography, Container, Paper, Button, Grid } from '@mui/material';
+import { Box, Typography, Container, Paper, Button, Grid, Modal } from '@mui/material';
+import DeviceChart from './deviceStats'; 
+import ReactDatePicker from 'react-datepicker';
+import { format } from 'date-fns';
+import "react-datepicker/dist/react-datepicker.css";
 
 const MyDevices = () => {
     const [userDevices, setUserDevices] = useState([]);
     const [allDevices, setAllDevices] = useState([]);
     const [errorStatus, setErrorStatus] = useState(0);
     const [error, setError] = useState(null);
+    const [openChartModal, setOpenChartModal] = useState(false);
+    const [selectedDevice, setSelectedDevice] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(null);
+    const [deviceData, setDeviceData] = useState(null);
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [fullDay, setFullDay] = useState(false); // State to track full day view
     const navigate = useNavigate();
 
     useEffect(() => {
         const role = localStorage.getItem('role');
         if (!role) {
-            navigate('/login'); // Redirect to login if not authenticated
+            navigate('/login');
         }
         const personName = localStorage.getItem('name');
         if (personName) {
@@ -26,8 +36,7 @@ const MyDevices = () => {
     const fetchUserDevices = (personName) => {
         getDevicesByPersonName(personName, (res, status, err) => {
             if (status === 200) {
-                const data = JSON.parse(res);
-                setUserDevices(data);
+                setUserDevices(JSON.parse(res));
             } else {
                 setErrorStatus(status);
                 setError(err);
@@ -38,8 +47,7 @@ const MyDevices = () => {
     const fetchAllDevices = () => {
         getUnlinkedDevices((res, status, err) => {
             if (status === 200) {
-                const data = JSON.parse(res);
-                setAllDevices(data);
+                setAllDevices(JSON.parse(res));
             } else {
                 setErrorStatus(status);
                 setError(err);
@@ -81,6 +89,39 @@ const MyDevices = () => {
         });
     };
 
+    const handleShowChart = (device) => {
+        setSelectedDevice(device);
+        setShowDatePicker(true);
+    };
+
+    const handleDateSelection = (date) => {
+        setSelectedDate(date);
+        const formattedDate = format(date, 'yyyy-MM-dd');
+        getDeviceConsumption(selectedDevice.id, formattedDate, (res, status, err) => {
+            if (status === 200) {
+                setDeviceData(JSON.parse(res));
+                setOpenChartModal(true);
+                setShowDatePicker(false);
+            } else {
+                setErrorStatus(status);
+                setError({ message: 'Failed to fetch device data' });
+            }
+        });
+    };
+
+    const handleFullDay = () => {
+        // Generate full day data, filling missing hours with 0
+        const fullDayData = Array.from({ length: 24 }, (_, index) => {
+            const existingData = deviceData.find(item => item.hour === index);
+            return {
+                hour: index,
+                medianConsumptionValue: existingData ? existingData.medianConsumptionValue : 0
+            };
+        });
+        setDeviceData(fullDayData);
+        setFullDay(true); // Mark that it's a full day chart
+    };
+
     const userColumns = [
         { field: 'id', headerName: 'ID', width: 90 },
         { field: 'name', headerName: 'Name', width: 150 },
@@ -89,24 +130,37 @@ const MyDevices = () => {
         { field: 'energy', headerName: 'Energy', width: 130 },
         {
             field: 'unlink',
-            headerName: 'Action',
+            headerName: 'Unlink',
             width: 200,
             renderCell: (params) => (
-                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                    <Button 
-                        variant="contained" 
-                        color="error" 
-                        onClick={() => handleUnlink(params.row.id)}
-                        sx={{ width: '100%' }}
-                    >
-                        Unlink
-                    </Button>
-                </Box>
+                <Button
+                    variant="contained"
+                    color="error"
+                    fullWidth
+                    onClick={() => handleUnlink(params.row.id)}
+                >
+                    Unlink
+                </Button>
+            ),
+        },
+        {
+            field: 'chart',
+            headerName: 'Show Chart',
+            width: 200,
+            renderCell: (params) => (
+                <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={() => handleShowChart(params.row)}
+                >
+                    Show Chart
+                </Button>
             ),
         },
     ];
-
-    const allColumns = [
+    
+    const allDevicesColumns = [
         { field: 'id', headerName: 'ID', width: 90 },
         { field: 'name', headerName: 'Name', width: 150 },
         { field: 'model', headerName: 'Model', width: 150 },
@@ -114,25 +168,24 @@ const MyDevices = () => {
         { field: 'energy', headerName: 'Energy', width: 130 },
         {
             field: 'link',
-            headerName: 'Action',
+            headerName: 'Link',
             width: 200,
             renderCell: (params) => (
-                <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-                    <Button 
-                        variant="contained" 
-                        color="primary" 
-                        onClick={() => handleLink(params.row.id)}
-                        sx={{ width: '100%' }}
-                    >
-                        Link
-                    </Button>
-                </Box>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    onClick={() => handleLink(params.row.id)}
+                >
+                    Link
+                </Button>
             ),
         },
     ];
+    
 
     return (
-        <Container maxWidth={false} sx={{ padding: '0', width: '80vw' }}>
+        <Container maxWidth={false} sx={{ padding: '20px', width: '80vw' }}>
             <Typography variant="h4" gutterBottom align="center">
                 My Devices
             </Typography>
@@ -142,74 +195,105 @@ const MyDevices = () => {
                 </Typography>
             )}
 
-            <Grid container spacing={2} justifyContent="space-between">
+            <Grid container spacing={2}>
                 <Grid item xs={12} sm={6}>
-                    <Paper elevation={3} sx={{ padding: '20px' }}>
+                    <Paper elevation={3} sx={{ padding: '20px', backgroundColor: '#f9f9f9' }}>
                         <Typography variant="h6" gutterBottom align="center">
                             Your Devices
                         </Typography>
                         <Box sx={{ height: 400, width: '100%' }}>
-                            {userDevices.length > 0 ? (
-                                <DataGrid
-                                    rows={userDevices}
-                                    columns={userColumns}
-                                    pageSize={5}
-                                    rowsPerPageOptions={[5]}
-                                    disableRowSelectionOnClick
-                                    sx={{
-                                        '& .MuiDataGrid-row': {
-                                            fontSize: '1.2rem',
-                                        },
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            fontSize: '1.3rem',
-                                        },
-                                        '& .MuiDataGrid-cell': {
-                                            padding: '10px',
-                                        },
-                                    }}
-                                />
-                            ) : (
-                                <Typography align="center" color="textSecondary">
-                                    No devices found.
-                                </Typography>
-                            )}
+                            <DataGrid
+                                rows={userDevices || [] }
+                                columns={userColumns}
+                                pageSize={5}
+                                disableSelectionOnClick
+                            />
                         </Box>
                     </Paper>
                 </Grid>
                 <Grid item xs={12} sm={6}>
-                    <Paper elevation={3} sx={{ padding: '20px' }}>
+                    <Paper elevation={3} sx={{ padding: '20px', backgroundColor: '#f9f9f9' }}>
                         <Typography variant="h6" gutterBottom align="center">
-                            All Available Devices
+                            Available Devices
                         </Typography>
                         <Box sx={{ height: 400, width: '100%' }}>
-                            {allDevices.length > 0 ? (
-                                <DataGrid
-                                    rows={allDevices}
-                                    columns={allColumns}
-                                    pageSize={5}
-                                    rowsPerPageOptions={[5]}
-                                    disableRowSelectionOnClick
-                                    sx={{
-                                        '& .MuiDataGrid-row': {
-                                            fontSize: '1.2rem',
-                                        },
-                                        '& .MuiDataGrid-columnHeaders': {
-                                            fontSize: '1.3rem',
-                                        },
-                                        '& .MuiDataGrid-cell': {
-                                            padding: '10px',
-                                        },
-                                    }}
-                                />
-                            ) : (
-                                <Typography align="center" color="textSecondary">
-                                    No available devices to link.
-                                </Typography>
-                            )}
+                            <DataGrid
+                                rows={allDevices || []}
+                                columns={allDevicesColumns}
+                                pageSize={5}
+                                disableSelectionOnClick
+                            />
                         </Box>
                     </Paper>
                 </Grid>
             </Grid>
+
+            <Modal open={showDatePicker} onClose={() => setShowDatePicker(false)}>
+                <Box
+                    sx={{
+                        width: '300px',
+                        backgroundColor: '#fff',
+                        borderRadius: '8px',
+                        padding: '20px',
+                        margin: 'auto',
+                        marginTop: '20vh',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                        textAlign: 'center',
+                    }}
+                >
+                    <Typography variant="h6" gutterBottom>
+                        Select a Date
+                    </Typography>
+                    <ReactDatePicker
+                        selected={selectedDate}
+                        onChange={handleDateSelection}
+                        dateFormat="yyyy/MM/dd"
+                        inline
+                    />
+                    <Button
+                        variant="contained"
+                        color="secondary"
+                        sx={{ marginTop: '10px' }}
+                        onClick={() => setShowDatePicker(false)}
+                    >
+                        Cancel
+                    </Button>
+                </Box>
+            </Modal>
+
+            <Modal open={openChartModal} onClose={() => setOpenChartModal(false)}>
+                <Box
+                    sx={{
+                        width: '90vw',
+                        height: '80vh',
+                        backgroundColor: '#fff',
+                        padding: '20px',
+                        margin: 'auto',
+                        marginTop: '5vh',
+                        borderRadius: '8px',
+                        overflowY: 'auto',
+                    }}
+                >
+                    <DeviceChart deviceData={deviceData} />
+                    <Box sx={{ textAlign: 'center', marginTop: 2 }}>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => setOpenChartModal(false)}
+                            sx={{ marginRight: 2 }}
+                        >
+                            Close
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleFullDay}
+                        >
+                            Full Day
+                        </Button>
+                    </Box>
+                </Box>
+            </Modal>
         </Container>
     );
 };

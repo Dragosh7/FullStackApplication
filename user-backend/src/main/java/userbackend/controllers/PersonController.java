@@ -89,13 +89,14 @@ public class PersonController {
         return new ResponseEntity<>(status, HttpStatus.OK);
     }
 
-    @DeleteMapping(value="{id}")
-    public ResponseEntity<String> deletePerson(@PathVariable("id") UUID personId) {
 
+    @DeleteMapping("/{personId}")
+    public ResponseEntity<String> deletePerson(@PathVariable("personId") UUID personId) {
         String status = personService.deleteUserAsAdmin(personId);
-
         return new ResponseEntity<>(status, HttpStatus.OK);
     }
+
+
 
 
 }

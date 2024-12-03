@@ -3,11 +3,12 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './authentication/login'; 
 import Signup from './authentication/signup'; 
 import DashboardLayoutBranding from './home/dashboard'; // Import your Dashboard layout
-
+import Notifications from './commons/notifications'; 
 import './App.css'; 
 
 class App extends React.Component {
     render() {
+        const username = localStorage.getItem('name'); 
         return (
             <div className="App">
                 <Router>
@@ -28,6 +29,7 @@ class App extends React.Component {
                             <Route path="/*" element={<DashboardLayoutBranding />} />
                         </Routes>
                     </div>
+                    {username && <Notifications username={username} />} {/* Only show notifications if user is logged in */}
                 </Router>
             </div>
         );

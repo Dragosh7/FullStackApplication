@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebSocket STOMP Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs/lib/stomp.min.js"></script>
+</head>
+<body>
+<h1>WebSocket STOMP Test</h1>
+<button id="connectBtn">Connect</button>
+<button id="sendBtn" disabled>Send Message</button>
+<p id="status">Status: Not connected</p>
+<div id="messages"></div>
+
+<script>
+    let stompClient;
+
+    document.getElementById('connectBtn').addEventListener('click', () => {
+        const socket = new SockJS('http://localhost:8089/ws');
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect({}, (frame) => {
+            console.log('Connected: ' + frame);
+            document.getElementById('status').textContent = "Status: Connected";
+            document.getElementById('sendBtn').disabled = false;
+
+            // Subscribe to messages from the server
+            stompClient.subscribe('/topic/messages', (message) => {
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = `Received: ${message.body}`;
+                document.getElementById('messages').appendChild(messageDiv);
+            });
+        });
+    });
+
+    document.getElementById('sendBtn').addEventListener('click', () => {
+        if (stompClient) {
+            const message = "Test message from client";
+            stompClient.send('/app/send', {}, message); // Send message to the server
+        }
+    });
+</script>
+</body>
+</html>

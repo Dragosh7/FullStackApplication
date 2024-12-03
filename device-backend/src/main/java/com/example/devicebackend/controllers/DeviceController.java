@@ -1,11 +1,14 @@
 package com.example.devicebackend.controllers;
 
+import ch.qos.logback.core.net.SyslogOutputStream;
 import com.example.devicebackend.dtos.DeviceDTO;
 import com.example.devicebackend.dtos.DeviceDetailsDTO;
 import com.example.devicebackend.dtos.DeviceLinkRequest;
 import com.example.devicebackend.services.DeviceService;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

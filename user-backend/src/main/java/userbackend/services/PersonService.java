@@ -1,9 +1,9 @@
 package userbackend.services;
 
-import userbackend.dtos.LoginResponse;
-import userbackend.dtos.PersonDTO;
-import userbackend.dtos.PersonDetailsDTO;
-import userbackend.dtos.PersonDeviceDTO;
+import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import userbackend.dtos.*;
 import userbackend.dtos.builders.PersonBuilder;
 import userbackend.entities.Person;
 import userbackend.repositories.PersonRepository;
@@ -25,10 +25,13 @@ public class PersonService {
     private static final Logger LOGGER = LoggerFactory.getLogger(PersonService.class);
     private final PersonRepository personRepository;
     private final RestTemplate restTemplate = new RestTemplate();
+    private final RabbitTemplate rabbitTemplate;
+
 
     @Autowired
-    public PersonService(PersonRepository personRepository) {
+    public PersonService(PersonRepository personRepository, RabbitTemplate rabbitTemplate) {
         this.personRepository = personRepository;
+        this.rabbitTemplate = rabbitTemplate;
     }
 
     private String hashPassword(String plainPassword) {
@@ -97,6 +100,8 @@ public class PersonService {
 
         person = personRepository.save(person);
         sendUserToExternalService(PersonBuilder.toDeviceDB(person), "POST");
+        rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+                "ADD"));
 
         LOGGER.debug("Person with id {} was inserted in db", person.getId());
         return person.getId();
@@ -128,9 +133,10 @@ public class PersonService {
         Person person = PersonBuilder.toEntity(personDTO);
         person.setId(personByOldName.getId());
         if(!"null".equals(personDTO.getRole())){
+            System.out.println(personDTO.getRole());
             person.setRole(personDTO.getRole());
         }
-        person.setRole(personByOldName.getRole());
+        else{person.setRole(personByOldName.getRole());}
         if(!"null".equals(personDTO.getPassword())){
             String hashedPassword = hashPassword(personDTO.getPassword());
             person.setPassword(hashedPassword);
@@ -141,6 +147,8 @@ public class PersonService {
         person = personRepository.save(person);
         System.out.println(PersonBuilder.toDeviceDB(person));
         sendUserToExternalService(PersonBuilder.toDeviceDB(person),"PUT");
+        rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+                "UPDATE"));
 
         LOGGER.debug("Person with id {} was updated in db", person.getId());
 
@@ -166,6 +174,8 @@ public class PersonService {
             if(checkPassword(password, personOptional.get().getPassword())){
                 deleteUserFromExternalService(personOptional.get().getId());
                 personRepository.delete(personOptional.get());
+                rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                        "DELETE"));
                 return "Success";
             }
             return "Wrong password";
@@ -173,12 +183,16 @@ public class PersonService {
 
         return "No such user";
     }
+
     public String deleteUserAsAdmin(UUID id) {
         Optional<Person> personOptional = personRepository.findById(id);
 
         if (personOptional.isPresent()) {
                 deleteUserFromExternalService(personOptional.get().getId());
+                rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                    "DELETE"));
                 personRepository.delete(personOptional.get());
+
                 return "Success";
         }
 
@@ -186,8 +200,8 @@ public class PersonService {
     }
 
     private void sendUserToExternalService(PersonDeviceDTO personDTO, String method) {
-        //String url = "http://localhost:8081/person";
-        String url = "http://device-backend:8081/person";
+        //String url = "http://localhost:8081/device-backend/person";
+        String url = "http://traefik/device-backend/person";
 
         if ("POST".equalsIgnoreCase(method)) {
             restTemplate.postForEntity(url, personDTO, String.class);
@@ -197,8 +211,31 @@ public class PersonService {
     }
 
     private void deleteUserFromExternalService(UUID id) {
-        String url = "http://device-backend:8081/person/" + id;
+        //String url = "http://localhost:8081/device-backend/person/" + id;
+        //String url = "http://device-backend:8081/person/" + id;
+        String url = "http://traefik/device-backend/person/" + id;
         restTemplate.delete(url);
     }
+
+    public void init() {
+        Optional<Person> person = personRepository.findByName("admin");
+        if (person.isEmpty()) {
+            Person admin = new Person();
+            admin.setName("admin");
+            admin.setAddress("Default Address");
+            admin.setAge(30);
+            admin.setPassword(hashPassword("admin"));
+            admin.setRole("admin");
+
+            admin = personRepository.save(admin);
+            sendUserToExternalService(PersonBuilder.toDeviceDB(admin), "POST");
+
+            rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(admin),
+                    "ADD"));
+
+
+        }
+    }
+
 
 }

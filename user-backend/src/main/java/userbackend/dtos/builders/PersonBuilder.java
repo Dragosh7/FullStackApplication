@@ -3,6 +3,7 @@ package userbackend.dtos.builders;
 import userbackend.dtos.PersonDTO;
 import userbackend.dtos.PersonDetailsDTO;
 import userbackend.dtos.PersonDeviceDTO;
+import userbackend.dtos.PersonMonitorDTO;
 import userbackend.entities.Person;
 
 public class PersonBuilder {
@@ -20,6 +21,10 @@ public class PersonBuilder {
 
     public static PersonDetailsDTO toPersonDetailsDTO(Person person) {
         return new PersonDetailsDTO(person.getId(), person.getName(), person.getAddress(), person.getAge(), person.getRole());
+    }
+
+    public static PersonMonitorDTO toPersonMonitorDTO(Person person) {
+        return new PersonMonitorDTO(person.getId(), person.getName());
     }
 
     public static Person toEntity(PersonDetailsDTO personDetailsDTO) {
