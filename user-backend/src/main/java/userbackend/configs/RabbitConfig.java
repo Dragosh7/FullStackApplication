@@ -13,12 +13,24 @@ import org.springframework.context.annotation.Configuration;
 @EnableRabbit
 public class RabbitConfig {
 
-    public static final String USER_CHANGE_QUEUE = "user-change-queue";
+    public static final String USER_CHANGE_QUEUE = "user-monitor-queue";
+    public static final String USER_CHAT_QUEUE = "user-chat-queue";
+    public static final String USER_DEVICE_QUEUE = "user-device-queue";
     public static final String USER_CHANGE_EXCHANGE = "user-change-exchange";
 
     @Bean
     public Queue userChangeQueue() {
         return new Queue(USER_CHANGE_QUEUE, true);
+    }
+
+    @Bean
+    public Queue userChatQueue() {
+        return new Queue(USER_CHAT_QUEUE, true);
+    }
+
+    @Bean
+    public Queue userDeviceQueue() {
+        return new Queue(USER_DEVICE_QUEUE, true);
     }
 
     @Bean

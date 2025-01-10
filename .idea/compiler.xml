@@ -2,12 +2,15 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="device-backend" />
         <module name="user-backend" />
+        <module name="chat-microservice" />
+        <module name="monitoring-backend" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -16,8 +19,10 @@
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="chat-microservice" options="-parameters" />
       <module name="device-backend" options="-parameters" />
       <module name="ds-2020" options="-parameters" />
+      <module name="monitoring-backend" options="-parameters" />
       <module name="user-backend" options="-parameters" />
     </option>
   </component>

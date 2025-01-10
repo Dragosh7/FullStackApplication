@@ -16,7 +16,7 @@ public class IndexController {
         this.personService = personService;
     }
 
-    @GetMapping(value = "/")
+    @GetMapping(value = "/init")
     public ResponseEntity<String> getStatus() {
         personService.init();
         return new ResponseEntity<>("City APP Service is running...", HttpStatus.OK);

@@ -11,6 +11,7 @@ import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
 import { styled } from '@mui/material/styles';
 import { login } from '../person/api/person-api'; 
+import {jwtDecode} from "jwt-decode";
 
 const GradientBackground = styled('div')(({ theme }) => ({
   background: 'linear-gradient( 93.2deg,  rgba(24,95,246,1) 14.4%, rgba(27,69,166,1) 90.8% );', 
@@ -78,15 +79,27 @@ export default function SignIn() {
         login(user, (result, status) => {
               console.log('Login result:', result); 
             if (status === 200) {
-                  const {id, name, role } = JSON.parse(result); // Extract fields from parsed result
+                  const {token } = JSON.parse(result); 
       
                   // Store user details in local storage
-                  localStorage.setItem('name', name);
-                  localStorage.setItem('id', id);
-                  localStorage.setItem('role', role);
-        
+                //   localStorage.setItem('name', name);
+                //   localStorage.setItem('id', id);
+                //   localStorage.setItem('role', role);
+                  localStorage.setItem('token', token);
+                  if (token) {
+                    try {
+                      const decoded = jwtDecode(token);
+                      console.log("Decoded JWT payload:", decoded);
+                  localStorage.setItem('name', decoded.sub);
+                  localStorage.setItem('id', decoded.id);
+                  localStorage.setItem('role', decoded.role);                   
+                 }
+                   catch (error) {
+                      console.error("Invalid token:", error);
+                    }
+                }
 
-                setResponseMessage(`Login successful! Welcome, ${name}`);
+                //setResponseMessage(`Login successful! Welcome, ${name}`);
                 navigate('/mydevices');
                 //window.reload();
             } else {

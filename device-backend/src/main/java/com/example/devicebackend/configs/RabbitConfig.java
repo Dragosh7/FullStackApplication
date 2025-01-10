@@ -14,11 +14,17 @@ import org.springframework.amqp.rabbit.annotation.EnableRabbit;
 public class RabbitConfig {
 
     public static final String DEVICE_CHANGE_QUEUE = "device-change-queue";
+    public static final String USER_DEVICE_QUEUE = "user-device-queue";
     public static final String DEVICE_CHANGE_EXCHANGE = "device-change-exchange";
 
     @Bean
     public Queue deviceChangeQueue() {
         return new Queue(DEVICE_CHANGE_QUEUE, true);
+    }
+
+    @Bean
+    public Queue userDeviceQueue() {
+        return new Queue(USER_DEVICE_QUEUE, true);
     }
 
     @Bean

@@ -74,13 +74,13 @@ public class PersonService {
         return PersonBuilder.toPersonDetailsDTO(personOptional.get());
     }
 
-    public LoginResponse findPersonRights(String name) throws Exception {
+    public SecurityLoginResponse findPersonRights(String name) throws Exception {
         Optional<Person> personOptional = personRepository.findByName(name);
         if (!personOptional.isPresent()) {
             LOGGER.error("Person with name {} was not found in db", name);
             throw new Exception(Person.class.getSimpleName() + " with name: " + name);
         }
-        return new LoginResponse("",personOptional.get().getId(), personOptional.get().getName(),personOptional.get().getRole());
+        return new SecurityLoginResponse("",personOptional.get().getId(), personOptional.get().getName(),personOptional.get().getRole(),"");
     }
 
     public UUID insert(PersonDetailsDTO personDTO) throws Exception {
@@ -99,8 +99,12 @@ public class PersonService {
         Person person = PersonBuilder.toEntity(personDTO);
 
         person = personRepository.save(person);
-        sendUserToExternalService(PersonBuilder.toDeviceDB(person), "POST");
+        //sendUserToExternalService(PersonBuilder.toDeviceDB(person), "POST");
         rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+                "ADD"));
+        rabbitTemplate.convertAndSend( "user-device-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+                "ADD"));
+        rabbitTemplate.convertAndSend( "user-chat-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
                 "ADD"));
 
         LOGGER.debug("Person with id {} was inserted in db", person.getId());
@@ -146,8 +150,12 @@ public class PersonService {
         }
         person = personRepository.save(person);
         System.out.println(PersonBuilder.toDeviceDB(person));
-        sendUserToExternalService(PersonBuilder.toDeviceDB(person),"PUT");
-        rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+        //sendUserToExternalService(PersonBuilder.toDeviceDB(person),"PUT");
+        rabbitTemplate.convertAndSend( "user-monitor-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+                "UPDATE"));
+        rabbitTemplate.convertAndSend( "user-device-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
+                "UPDATE"));
+        rabbitTemplate.convertAndSend( "user-chat-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(person),
                 "UPDATE"));
 
         LOGGER.debug("Person with id {} was updated in db", person.getId());
@@ -172,10 +180,14 @@ public class PersonService {
 
         if (personOptional.isPresent()) {
             if(checkPassword(password, personOptional.get().getPassword())){
-                deleteUserFromExternalService(personOptional.get().getId());
-                personRepository.delete(personOptional.get());
-                rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                //deleteUserFromExternalService(personOptional.get().getId());
+                rabbitTemplate.convertAndSend( "user-monitor-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
                         "DELETE"));
+                rabbitTemplate.convertAndSend( "user-device-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                        "DELETE"));
+                rabbitTemplate.convertAndSend( "user-chat-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                        "DELETE"));
+                personRepository.delete(personOptional.get());
                 return "Success";
             }
             return "Wrong password";
@@ -188,8 +200,12 @@ public class PersonService {
         Optional<Person> personOptional = personRepository.findById(id);
 
         if (personOptional.isPresent()) {
-                deleteUserFromExternalService(personOptional.get().getId());
-                rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                //deleteUserFromExternalService(personOptional.get().getId());
+                rabbitTemplate.convertAndSend( "user-monitor-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                    "DELETE"));
+                rabbitTemplate.convertAndSend( "user-device-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
+                    "DELETE"));
+                rabbitTemplate.convertAndSend( "user-chat-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(personOptional.get()),
                     "DELETE"));
                 personRepository.delete(personOptional.get());
 
@@ -228,9 +244,13 @@ public class PersonService {
             admin.setRole("admin");
 
             admin = personRepository.save(admin);
-            sendUserToExternalService(PersonBuilder.toDeviceDB(admin), "POST");
+            //sendUserToExternalService(PersonBuilder.toDeviceDB(admin), "POST");
 
-            rabbitTemplate.convertAndSend( "user-change-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(admin),
+            rabbitTemplate.convertAndSend( "user-monitor-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(admin),
+                    "ADD"));
+            rabbitTemplate.convertAndSend( "user-device-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(admin),
+                    "ADD"));
+            rabbitTemplate.convertAndSend( "user-chat-queue", new PersonChangeDTO(PersonBuilder.toPersonMonitorDTO(admin),
                     "ADD"));
 
 

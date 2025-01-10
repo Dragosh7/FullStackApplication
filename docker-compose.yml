@@ -73,6 +73,19 @@ services:
     networks:
       demo_net:
 
+  db-chat:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'chat-db'
+      MYSQL_ROOT_PASSWORD: 'admin'
+    ports:
+      - "3310:3306"
+    volumes:
+      - db-chat:/var/lib/mysql
+    networks:
+      demo_net:
+
   user-backend:
     build:
       context: ./user-backend
@@ -144,6 +157,27 @@ services:
     networks:
       demo_net:
 
+  chat-microservice:
+    build:
+      context: ./chat-microservice
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - DB_IP=db-chat
+      - DB_PORT=3306
+      - DB_DBNAME=chat-db
+      - DB_USER=root
+      - DB_PASSWORD=admin
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+    depends_on:
+      - rabbitmq
+      - user-backend
+      - db-chat
+    networks:
+      demo_net:
+
   frontend:
     build:
       context: ./frontend
@@ -157,6 +191,7 @@ volumes:
   db-user:
   db-device:
   db-monitoring:
+  db-chat:
   traefik_logs:
 
 networks:

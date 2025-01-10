@@ -7,6 +7,8 @@
         <option value="$PROJECT_DIR$/spring-demo/pom.xml" />
         <option value="$PROJECT_DIR$/device-backend/pom.xml" />
         <option value="$PROJECT_DIR$/user-backend/pom.xml" />
+        <option value="$PROJECT_DIR$/monitoring-backend/pom.xml" />
+        <option value="$PROJECT_DIR$/chat-microservice/pom.xml" />
       </list>
     </option>
   </component>

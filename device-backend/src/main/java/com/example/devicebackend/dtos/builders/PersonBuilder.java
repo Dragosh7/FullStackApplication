@@ -2,6 +2,7 @@ package com.example.devicebackend.dtos.builders;
 
 import com.example.devicebackend.dtos.PersonDTO;
 import com.example.devicebackend.dtos.PersonDetailsDTO;
+import com.example.devicebackend.dtos.PersonMonitorDTO;
 import com.example.devicebackend.entities.Person;
 
 public class PersonBuilder {
@@ -19,5 +20,9 @@ public class PersonBuilder {
 
     public static Person toEntity(PersonDetailsDTO personDetailsDTO) {
         return new Person(personDetailsDTO.getId(), personDetailsDTO.getName());
+    }
+
+    public static Person personMonitorToEntity(PersonMonitorDTO personMonitorDTO) {
+        return new Person(personMonitorDTO.getId(), personMonitorDTO.getName());
     }
 }

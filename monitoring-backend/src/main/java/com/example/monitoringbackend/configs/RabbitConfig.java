@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 public class RabbitConfig {
 
     public static final String DEVICE_CHANGE_QUEUE = "device-change-queue";
-    public static final String USER_CHANGE_QUEUE = "user-change-queue";
+    public static final String USER_CHANGE_QUEUE = "user-monitor-queue";
     public static final String ENERGY_CHANGE_QUEUE = "energy-measurements";
 
     @Bean

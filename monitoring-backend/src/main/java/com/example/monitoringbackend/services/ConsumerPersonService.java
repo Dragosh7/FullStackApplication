@@ -20,8 +20,8 @@ public class ConsumerPersonService {
         this.personRepository = personRepository;
     }
 
-    @RabbitListener(queues = "user-change-queue")
-    public void receiveDeviceChange(PersonChangeDTO message) throws Exception {
+    @RabbitListener(queues = "user-monitor-queue")
+    public void receiveUserChange(PersonChangeDTO message) throws Exception {
 
         System.out.println("Received message: " + message.toString());
         System.out.println("Received message: " + message.getAction());

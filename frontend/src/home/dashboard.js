@@ -8,6 +8,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import PeopleIcon from '@mui/icons-material/People';
 import DevicesIcon from '@mui/icons-material/Devices';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import ChatIcon from '@mui/icons-material/Chat';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AdUnitsIcon from '@mui/icons-material/AdUnits';
 import { Link, Routes, Route, useNavigate } from 'react-router-dom';
@@ -18,6 +19,7 @@ import Devices from '../device/device';
 import MyDevices from '../device/myDevice'; 
 import EditAccount from '../person/editAccount'; 
 import Logout from '../authentication/login'; 
+import Chat from '../chat/Chat';
 import NotFound from './notFound'; 
 
 // Navigation Configuration
@@ -47,10 +49,16 @@ const NAVIGATION = [
     link: '/edit-account',
   },
   {
+    segment: 'chat',
+    title: 'Chat',
+    icon: <ChatIcon />,
+    link: '/chat',
+  },
+  {
     segment: 'logout',
     title: 'Log Out',
     icon: <LogoutIcon />,
-    link: '/login', // Update this to your login route
+    link: '/login', 
   },
 ];
 
@@ -131,6 +139,7 @@ function DashboardLayoutBranding(props) {
             <Route path="/mydevices" element={<MyDevices />} />
             <Route path="/edit-account" element={<EditAccount />} />
             <Route path="/login" element={<Logout />} />
+            <Route path="/chat" element={<Chat />} />
             <Route path="*" element={<NotFound  />} />
 
 

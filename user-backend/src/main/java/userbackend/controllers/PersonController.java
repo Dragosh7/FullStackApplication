@@ -1,5 +1,9 @@
 package userbackend.controllers;
 
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import userbackend.dtos.AuthenticationDTO;
 import userbackend.dtos.LoginResponse;
 import userbackend.dtos.PersonDetailsDTO;
@@ -7,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import userbackend.dtos.SecurityLoginResponse;
+import userbackend.security.JwtUtil;
 import userbackend.services.*;
 import userbackend.services.PersonService;
 
@@ -19,10 +25,13 @@ import java.util.UUID;
 public class PersonController {
 
     private final PersonService personService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public PersonController(PersonService personService) {
-        this.personService = personService;
+    public PersonController(PersonService personService,AuthenticationManager authenticationManager, JwtUtil jwtUtil) {
+        this.personService = personService;this.authenticationManager = authenticationManager;
+        this.jwtUtil = jwtUtil;
     }
 
     @GetMapping()
@@ -31,7 +40,7 @@ public class PersonController {
         return new ResponseEntity<>(dtos, HttpStatus.OK);
     }
 
-    @PostMapping()
+    @PostMapping("/signup")
     public ResponseEntity<UUID> insertPerson(@RequestBody PersonDetailsDTO personDTO,
                                              @RequestParam(value = "secretKey", required = false) String secretKey) throws Exception {
         if("parola".equals(secretKey)) {
@@ -69,15 +78,41 @@ public class PersonController {
         return new ResponseEntity<>(updatedPerson, HttpStatus.OK);
     }
 
+//    @PostMapping(value = "/login")
+//    public ResponseEntity<LoginResponse> login(@RequestBody AuthenticationDTO loginDTO) throws Exception {
+//        boolean isAuthenticated = personService.authenticateUser(loginDTO.getUsername(), loginDTO.getPassword());
+//        if (isAuthenticated) {
+//            LoginResponse toStore = personService.findPersonRights(loginDTO.getUsername());
+//            toStore.setMessage("Login successful");
+//            return new ResponseEntity<>(toStore, HttpStatus.OK);
+//        } else {
+//            return new ResponseEntity<>(new LoginResponse("Login failed"), HttpStatus.UNAUTHORIZED);
+//        }
+//    }
+
     @PostMapping(value = "/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody AuthenticationDTO loginDTO) throws Exception {
-        boolean isAuthenticated = personService.authenticateUser(loginDTO.getUsername(), loginDTO.getPassword());
-        if (isAuthenticated) {
-            LoginResponse toStore = personService.findPersonRights(loginDTO.getUsername());
-            toStore.setMessage("Login successful");
-            return new ResponseEntity<>(toStore, HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>(new LoginResponse("Login failed"), HttpStatus.UNAUTHORIZED);
+    public ResponseEntity<SecurityLoginResponse> login(@RequestBody AuthenticationDTO loginDTO) {
+        try {
+            // Perform authentication
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(loginDTO.getUsername(), loginDTO.getPassword())
+            );
+
+            // If authentication is successful, set Security Context
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // Generate JWT token
+            String token = jwtUtil.generateJwtToken(authentication);
+
+            // Return the response
+            SecurityLoginResponse response = personService.findPersonRights(loginDTO.getUsername());
+            response.setMessage("Login successful");
+            response.setToken(token);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception ex) {
+            // Authentication failed
+            return new ResponseEntity<>(new SecurityLoginResponse("Invalid username or password"), HttpStatus.UNAUTHORIZED);
         }
     }
 

@@ -16,7 +16,7 @@ public class IndexController {
         this.deviceService = deviceService;
     }
 
-    @GetMapping(value = "/")
+    @GetMapping(value = "/init")
     public ResponseEntity<String> getStatus() {
         deviceService.init();
         return new ResponseEntity<>("City APP Service is running...", HttpStatus.OK);
